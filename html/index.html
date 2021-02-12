@@ -1,0 +1,162 @@
+<html lang="en-GB">
+    <head>
+        <meta charset="utf-8">
+        <meta property="og:locale" content="en_GB">
+        <title>14ROVI's Link Shortener</title>
+        <link rel="canonical" href="https://s.rovi.me">
+
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://unpkg.com/98.css">
+        <style>
+            html {
+                background-image: url('https://i.imgur.com/sUc5BBl.gif');
+                background-repeat: no-repeat;
+                background-attachment: fixed;
+                background-size: cover;
+                overflow: hidden;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="draggable-window" class="window" style="width: fit-content; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px">
+            <div id="draggable-window-header" class="title-bar">
+              <div class="title-bar-text">Shorten a URL</div>
+              <div class="title-bar-controls">
+                <button aria-label="Minimize"></button>
+                <button aria-label="Maximize"></button>
+                <button aria-label="Close"></button>
+              </div>
+            </div>
+            <div class="window-body">
+                <div class="field-row-stacked">
+                    <label for="redirect">Redirect URL</label>
+                    <input type="text" name="redirect" id="redirect" placeholder="https://google.com" required>
+                </div>
+                <div class="field-row-stacked">
+                    <label for="password">Password</label>
+                    <input type="password" name="password" id="password" placeholder="password123" required>
+                </div>
+                <div class="field-row-stacked">
+                    <button onclick="shortenurl()">Shorten URL</button>
+                </div>
+
+                <div class="field-row-stacked" style="display: none; flex-direction: row; justify-content: space-between;">
+                    <a id="link-to-redirect" href = "" style="height: fit-content; margin: auto 0;"></a>
+                    <button onclick="copyToClipboard()">Copy</button>
+                </div>
+            </div>
+          </div>
+
+        <script>
+            function copyToClipboard() {
+                var url = document.getElementById("link-to-redirect")
+                var textArea = document.createElement("textarea");
+                textArea.value = url.href;
+                textArea.style.top = "0";
+                textArea.style.left = "0";
+                textArea.style.position = "fixed";
+
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                document.execCommand("copy");
+
+                document.body.removeChild(textArea);
+            }
+
+            async function shortenurl() {
+                var redirect = document.getElementById("redirect").value;
+                var password = document.getElementById("password").value;
+
+                var request = await fetch(
+                    `/add?password=${password}&redirect=${redirect}`,
+                    {method: "post"}
+                )
+                var el = document.getElementById("link-to-redirect")
+                if (request.ok) {
+                    var uri = (await request.json())["uri"]
+                    el.href = uri 
+                    el.innerText = uri
+                    el.parentElement.style.display = ""
+                } else {
+                    el.innerText = "That is not a valid URL or password!"
+                    el.parentElement.style.display = ""
+                }
+            }
+
+
+            // Make the DIV element draggable:
+            dragElement(document.getElementById("draggable-window"));
+
+            function dragElement(elmnt) {
+                var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                if (document.getElementById(elmnt.id + "-header")) {
+                    // if present, the header is where you move the DIV from:
+                    document.getElementById(elmnt.id + "-header").onmousedown = dragMouseDown;
+                } else {
+                    // otherwise, move the DIV from anywhere inside the DIV:
+                    elmnt.onmousedown = dragMouseDown;
+                }
+
+                function dragMouseDown(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    // get the mouse cursor position at startup:
+                    var mx = e.clientX;
+                    var my = e.clientY;
+                    var rect = elmnt.getBoundingClientRect();
+                    offsetx = mx - rect.x
+                    offsety = my - rect.y
+
+                    document.onmouseup = closeDragElement;
+                    // call a function whenever the cursor moves:
+                    document.onmousemove = elementDrag;
+                }
+
+                function elementDrag(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+
+                    var mx = e.clientX;
+                    var my = e.clientY;
+                    var w = window.innerWidth
+                    var h = window.innerHeight
+
+                    var rect = elmnt.getBoundingClientRect();
+                    
+                    var elx = (mx - offsetx + rect.width/2)
+                    var ely = (my - offsety + rect.height/2)
+
+                    elx = Math.max(Math.min(elx, w-rect.width/2), rect.width/2)
+                    ely = Math.max(Math.min(ely, h-rect.height/2), rect.height/2)
+
+                    elmnt.style.left = elx + "px";
+                    elmnt.style.top = ely + "px";
+
+                }
+
+                function closeDragElement() {
+                    // stop moving when mouse button is released:
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                }
+            }
+
+            function windowStayOnPage() {
+                var elmnt = document.getElementById("draggable-window")
+                var w = window.innerWidth
+                var h = window.innerHeight
+
+                var rect = elmnt.getBoundingClientRect();
+
+                elx = Math.max(Math.min(rect.x, w-rect.width), 0)
+                ely = Math.max(Math.min(rect.y, h-rect.height), 0)
+
+                elmnt.style.left = (elx + rect.width/2) + "px";
+                elmnt.style.top = (ely + rect.height/2) + "px";
+            }
+            window.addEventListener ("resize", windowStayOnPage, true);
+        </script>
+    </body>
+</html>

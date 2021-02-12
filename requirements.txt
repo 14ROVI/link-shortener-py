@@ -1,0 +1,5 @@
+asyncio
+aiopg
+python-dotenv
+aiohttp
+aiopylimit
